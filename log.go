@@ -65,8 +65,8 @@ var (
 	ErrIndexOutOfBound = errors.New("index_out_of_bound")
 )
 
-func Init(config LoggerConfig) {
-	for _, logger := range config.Logger {
+func Init(config []LoggerDefine) {
+	for _, logger := range config {
 		logger.Name = strings.ToLower(logger.Name)
 		logger.Writer = strings.ToLower(logger.Writer)
 		var log, ok = loggerMap[logger.Name]
@@ -102,6 +102,8 @@ func InitFromStr(tomlstr string) {
 		fmt.Printf("ERROR: logger read config: %v\n", err.Error())
 		os.Exit(1)
 	}
+
+	Init(config.Logger)
 }
 
 func InitFromFile(configFile string) {
@@ -221,7 +223,7 @@ func (log *Logger) Flush() {
 }
 
 func (log *Logger) Write(level int, format string, a ...interface{}) {
-	if log.maxLevel < level {
+	if log.maxLevel > level {
 		return
 	}
 	var msg string
