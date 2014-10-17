@@ -102,7 +102,6 @@ func InitFromStr(tomlstr string) {
 		fmt.Printf("ERROR: logger read config: %v\n", err.Error())
 		os.Exit(1)
 	}
-
 	Init(config.Logger)
 }
 
@@ -199,9 +198,9 @@ func NewWriter(level int, device string) Writer {
 }
 
 func (log *Logger) UpdateLevel() {
-	log.maxLevel = -1
+	log.maxLevel = DISABLE
 	for _, writer := range log.writers {
-		if writer.level > log.maxLevel {
+		if writer.level < log.maxLevel {
 			log.maxLevel = writer.level
 		}
 	}
