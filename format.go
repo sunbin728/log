@@ -55,7 +55,7 @@ func (format *DefaultFormatter) Format(level int, msg string) []byte {
 	buff := buffs.get()
 	buff.WriteByte(getLevelStr(level))
 	buff.WriteString(lastDateTimeStr)
-	_, file, line, ok := runtime.Caller(2)
+	_, file, line, ok := runtime.Caller(3)
 	if ok {
 		buff.WriteByte(' ')
 		var i int = len(file) - 2

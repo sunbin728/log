@@ -21,7 +21,7 @@ const (
 )
 
 type Logger struct {
-	maxLevel int
+	minLevel int
 	format   Formatter
 	writers  []Writer
 }
@@ -56,6 +56,7 @@ var (
 	lastDate        uint32
 	deviceMap       = map[string]func(string) Device{
 		"file":    createFileDevice,
+		"stdout":  createStdoutDevice,
 		"console": createConsoleDevice,
 		"nsq":     createNsqDevice,
 	}
@@ -66,19 +67,21 @@ var (
 )
 
 func Init(config []LoggerDefine) {
-	for _, logger := range config {
-		logger.Name = strings.ToLower(logger.Name)
-		logger.Writer = strings.ToLower(logger.Writer)
-		var log, ok = loggerMap[logger.Name]
-		if !ok {
-			log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
-		} else {
-			log.writers = append(log.writers, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
-			log.UpdateLevel()
-		}
-		loggerMap[logger.Name] = log
-		if logger.Name == "default" {
-			defaultLogger = log
+	if config != nil {
+		for _, logger := range config {
+			logger.Name = strings.ToLower(logger.Name)
+			logger.Writer = strings.ToLower(logger.Writer)
+			var log, ok = loggerMap[logger.Name]
+			if !ok {
+				log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+			} else {
+				log.writers = append(log.writers, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+				log.UpdateLevel()
+			}
+			loggerMap[logger.Name] = log
+			if logger.Name == "default" {
+				defaultLogger = log
+			}
 		}
 	}
 	updateNow()
@@ -198,10 +201,10 @@ func NewWriter(level int, device string) Writer {
 }
 
 func (log *Logger) UpdateLevel() {
-	log.maxLevel = DISABLE
+	log.minLevel = DISABLE
 	for _, writer := range log.writers {
-		if writer.level < log.maxLevel {
-			log.maxLevel = writer.level
+		if writer.level < log.minLevel {
+			log.minLevel = writer.level
 		}
 	}
 }
@@ -222,7 +225,7 @@ func (log *Logger) Flush() {
 }
 
 func (log *Logger) Write(level int, format string, a ...interface{}) {
-	if log.maxLevel > level {
+	if level < log.minLevel {
 		return
 	}
 	var msg string
@@ -279,9 +282,4 @@ func (logger *Logger) Error(format string, a ...interface{}) {
 func (logger *Logger) Fatal(format string, a ...interface{}) {
 	logger.Write(FATAL, format, a...)
 	os.Exit(1)
-}
-
-func main() {
-	Debug("hello")
-	time.Sleep(time.Hour)
 }

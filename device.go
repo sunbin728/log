@@ -80,23 +80,40 @@ func (file *FileDevice) Flush() {
 ////////////////////////////////////////////////////////////////////////////////
 // ConsoleDevice
 type ConsoleDevice struct {
+}
+
+func createConsoleDevice(args string) Device {
+	return &ConsoleDevice{}
+}
+
+func (console *ConsoleDevice) Write(p []byte) {
+	os.Stdout.Write(p)
+}
+
+func (console *ConsoleDevice) Flush() {
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// StdoutDevice
+type StdoutDevice struct {
 	writer *bufio.Writer
 	lock   sync.Mutex
 }
 
-func createConsoleDevice(args string) Device {
-	return &ConsoleDevice{
+func createStdoutDevice(args string) Device {
+	var device = &StdoutDevice{
 		writer: bufio.NewWriter(os.Stdout),
 	}
+	return device
 }
 
-func (console *ConsoleDevice) Write(p []byte) {
+func (console *StdoutDevice) Write(p []byte) {
 	console.lock.Lock()
 	console.writer.Write(p)
 	console.lock.Unlock()
 }
 
-func (console *ConsoleDevice) Flush() {
+func (console *StdoutDevice) Flush() {
 	console.lock.Lock()
 	console.writer.Flush()
 	console.lock.Unlock()
