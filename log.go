@@ -60,13 +60,40 @@ var (
 		"console": createConsoleDevice,
 		"nsq":     createNsqDevice,
 	}
-	defaultLogger      = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
-	loggerMap          = map[string]*Logger{}
-	ErrNameNotFound    = errors.New("name_not_found")
-	ErrIndexOutOfBound = errors.New("index_out_of_bound")
+	defaultLogger            = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
+	loggerMap                = map[string]*Logger{}
+	ErrNameNotFound          = errors.New("name_not_found")
+	ErrIndexOutOfBound       = errors.New("index_out_of_bound")
+	defaultGoroutineCancelCh = make(chan int, 1)
+	defaultGoroutineCloseCh  = make(chan int, 1)
 )
 
+func init() {
+	go bgWorker()
+}
+
+func bgWorker() {
+	updateNow()
+	timer := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-defaultGoroutineCancelCh:
+			defaultGoroutineCloseCh <- 1
+			timer.Stop()
+			return
+		case <-timer.C:
+			updateNow()
+			defaultLogger.Flush()
+			for _, log := range loggerMap {
+				log.Flush()
+			}
+		}
+	}
+}
+
 func Init(config []LoggerDefine) {
+	defaultGoroutineCancelCh <- 1
+	<-defaultGoroutineCloseCh
 	if config != nil {
 		var hasdefault = false
 		for _, logger := range config {
@@ -100,16 +127,7 @@ func Init(config []LoggerDefine) {
 		}
 	}
 	updateNow()
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			updateNow()
-			defaultLogger.Flush()
-			for _, log := range loggerMap {
-				log.Flush()
-			}
-		}
-	}()
+	go bgWorker()
 }
 
 func InitFromStr(tomlstr string) {
@@ -176,12 +194,13 @@ func SetLevel(name string, index int, level string) error {
 	var log *Logger
 	if name == "default" {
 		log = defaultLogger
-	}
-	if l, ok := loggerMap[name]; !ok {
-		fmt.Printf("ERROR: log name not found: %v\n", name)
-		return ErrNameNotFound
 	} else {
-		log = l
+		if l, ok := loggerMap[name]; !ok {
+			fmt.Printf("ERROR: log name not found: %v\n", name)
+			return ErrNameNotFound
+		} else {
+			log = l
+		}
 	}
 	if index >= len(log.writers) {
 		fmt.Printf("ERROR: log index exceed: %v, %v\n", len(log.writers), index)
