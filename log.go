@@ -68,19 +68,34 @@ var (
 
 func Init(config []LoggerDefine) {
 	if config != nil {
+		var hasdefault = false
 		for _, logger := range config {
 			logger.Name = strings.ToLower(logger.Name)
 			logger.Writer = strings.ToLower(logger.Writer)
-			var log, ok = loggerMap[logger.Name]
+			var log *Logger
+			var ok bool
+			if logger.Name == "default" {
+				if hasdefault {
+					log = defaultLogger
+					ok = true
+				} else {
+					log = nil
+					ok = false
+				}
+			} else {
+				log, ok = loggerMap[logger.Name]
+			}
 			if !ok {
 				log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
 			} else {
 				log.writers = append(log.writers, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
 				log.UpdateLevel()
 			}
-			loggerMap[logger.Name] = log
 			if logger.Name == "default" {
 				defaultLogger = log
+				hasdefault = true
+			} else {
+				loggerMap[logger.Name] = log
 			}
 		}
 	}
