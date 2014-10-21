@@ -29,6 +29,7 @@ func (b *buffPool) put(buf *bytes.Buffer) {
 	b.pool.Put(buf)
 }
 
+// DefaultFormatter 默认格式化
 type DefaultFormatter struct {
 	format string
 }
@@ -51,6 +52,7 @@ func getLevelStr(level int) byte {
 	}
 }
 
+// Format 格式化
 func (format *DefaultFormatter) Format(level int, msg string) []byte {
 	buff := buffs.get()
 	buff.WriteByte(getLevelStr(level))
@@ -58,7 +60,7 @@ func (format *DefaultFormatter) Format(level int, msg string) []byte {
 	_, file, line, ok := runtime.Caller(3)
 	if ok {
 		buff.WriteByte(' ')
-		var i int = len(file) - 2
+		var i = len(file) - 2
 		for ; i >= 0; i-- {
 			if file[i] == '/' {
 				i++

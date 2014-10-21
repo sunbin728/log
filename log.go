@@ -12,40 +12,52 @@ import (
 )
 
 const (
-	DEBUG   = iota
-	INFO    = iota
-	WARN    = iota
-	ERROR   = iota
+	// DEBUG 日志级别
+	DEBUG = iota
+	// INFO 日志级别
+	INFO = iota
+	// WARN 日志级别
+	WARN = iota
+	// ERROR 日志级别
+	ERROR = iota
+	// DISABLE 日志级别
 	DISABLE = iota
-	FATAL   = iota
+	// FATAL 日志级别
+	FATAL = iota
 )
 
+// Logger 日志对象
 type Logger struct {
 	minLevel int
 	format   Formatter
 	writers  []Writer
 }
 
+// Writer 日志输出对象
 type Writer struct {
 	level  int
 	device Device
 }
 
+// Device 日志输出设备
 type Device interface {
 	Write(msg []byte)
 	Flush()
 }
 
+// Formatter 日志格式化接口
 type Formatter interface {
 	Format(level int, msg string) []byte
 }
 
+// LoggerDefine 日志配置
 type LoggerDefine struct {
 	Name   string `toml:"name"`
 	Level  string `toml:"level"`
 	Writer string `toml:"writer"`
 }
 
+// LoggerConfig 日志配置
 type LoggerConfig struct {
 	Logger []LoggerDefine `toml:"logger"`
 }
@@ -60,9 +72,11 @@ var (
 		"console": createConsoleDevice,
 		"nsq":     createNsqDevice,
 	}
-	defaultLogger            = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
-	loggerMap                = map[string]*Logger{}
-	ErrNameNotFound          = errors.New("name_not_found")
+	defaultLogger = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
+	loggerMap     = map[string]*Logger{}
+	// ErrNameNotFound 日志名称没找到
+	ErrNameNotFound = errors.New("name_not_found")
+	// ErrIndexOutOfBound 日志索引没找到
 	ErrIndexOutOfBound       = errors.New("index_out_of_bound")
 	defaultGoroutineCancelCh = make(chan int, 1)
 	defaultGoroutineCloseCh  = make(chan int, 1)
@@ -91,6 +105,7 @@ func bgWorker() {
 	}
 }
 
+// Init 日志库初始化
 func Init(config []LoggerDefine) {
 	defaultGoroutineCancelCh <- 1
 	<-defaultGoroutineCloseCh
@@ -130,6 +145,7 @@ func Init(config []LoggerDefine) {
 	go bgWorker()
 }
 
+// InitFromStr 从字符串初始化
 func InitFromStr(tomlstr string) {
 	var config LoggerConfig
 
@@ -141,6 +157,7 @@ func InitFromStr(tomlstr string) {
 	Init(config.Logger)
 }
 
+// InitFromFile 从配置文件初始化
 func InitFromFile(configFile string) {
 	var tomlstr, err = ioutil.ReadFile(configFile)
 	if err != nil {
@@ -150,13 +167,13 @@ func InitFromFile(configFile string) {
 	InitFromStr(string(tomlstr))
 }
 
+// GetLogger 根据名字获取日志对象
 func GetLogger(name string) *Logger {
 	var logger, ok = loggerMap[name]
 	if ok {
 		return logger
-	} else {
-		return defaultLogger
 	}
+	return defaultLogger
 }
 
 func getLevelFromStr(level string) int {
@@ -190,17 +207,19 @@ func getLevelFromStr(level string) int {
 	}
 }
 
+// SetLevel 设置日志级别
 func SetLevel(name string, index int, level string) error {
 	var log *Logger
 	if name == "default" {
 		log = defaultLogger
 	} else {
-		if l, ok := loggerMap[name]; !ok {
+		var l *Logger
+		var ok bool
+		if l, ok = loggerMap[name]; !ok {
 			fmt.Printf("ERROR: log name not found: %v\n", name)
 			return ErrNameNotFound
-		} else {
-			log = l
 		}
+		log = l
 	}
 	if index >= len(log.writers) {
 		fmt.Printf("ERROR: log index exceed: %v, %v\n", len(log.writers), index)
@@ -218,6 +237,7 @@ func SetLevel(name string, index int, level string) error {
 	return nil
 }
 
+// NewLogger 创建新的日志对象
 func NewLogger(format Formatter, writers ...Writer) *Logger {
 	var logger = Logger{
 		format:  format,
@@ -227,6 +247,7 @@ func NewLogger(format Formatter, writers ...Writer) *Logger {
 	return &logger
 }
 
+// NewWriter 创建新的日志输出对象
 func NewWriter(level int, device string) Writer {
 	return Writer{
 		level:  level,
@@ -234,6 +255,7 @@ func NewWriter(level int, device string) Writer {
 	}
 }
 
+// UpdateLevel 更新日志对象的最小输出级别
 func (log *Logger) UpdateLevel() {
 	log.minLevel = DISABLE
 	for _, writer := range log.writers {
@@ -252,12 +274,14 @@ func updateNow() {
 	lastDateTimeStr = fmt.Sprintf("%04d %06d", dt%10000, tm)
 }
 
+// Flush 刷新日志
 func (log *Logger) Flush() {
 	for _, writer := range log.writers {
 		writer.device.Flush()
 	}
 }
 
+// Write 输出日志
 func (log *Logger) Write(level int, format string, a ...interface{}) {
 	if level < log.minLevel {
 		return
@@ -276,44 +300,54 @@ func (log *Logger) Write(level int, format string, a ...interface{}) {
 	}
 }
 
+// Debug 输出DEBUG级别日志
 func Debug(format string, a ...interface{}) {
 	defaultLogger.Write(DEBUG, format, a...)
 }
 
+// Info 输出INFO级别日志
 func Info(format string, a ...interface{}) {
 	defaultLogger.Write(INFO, format, a...)
 }
 
+// Warn 输出WARN级别日志
 func Warn(format string, a ...interface{}) {
 	defaultLogger.Write(WARN, format, a...)
 }
 
+// Error 输出ERROR级别日志
 func Error(format string, a ...interface{}) {
 	defaultLogger.Write(ERROR, format, a...)
 }
 
+// Fatal 输出FATAL级别日志
 func Fatal(format string, a ...interface{}) {
 	defaultLogger.Write(FATAL, format, a...)
 	os.Exit(1)
 }
 
-func (logger *Logger) Debug(format string, a ...interface{}) {
-	logger.Write(DEBUG, format, a...)
+// Debug 输出DEBUG级别日志
+func (log *Logger) Debug(format string, a ...interface{}) {
+	log.Write(DEBUG, format, a...)
 }
 
-func (logger *Logger) Info(format string, a ...interface{}) {
-	logger.Write(INFO, format, a...)
+// Info 输出INFO级别日志
+func (log *Logger) Info(format string, a ...interface{}) {
+	log.Write(INFO, format, a...)
 }
 
-func (logger *Logger) Warn(format string, a ...interface{}) {
-	logger.Write(WARN, format, a...)
+// Warn 输出WARN级别日志
+func (log *Logger) Warn(format string, a ...interface{}) {
+	log.Write(WARN, format, a...)
 }
 
-func (logger *Logger) Error(format string, a ...interface{}) {
-	logger.Write(ERROR, format, a...)
+// Error 输出ERROR级别日志
+func (log *Logger) Error(format string, a ...interface{}) {
+	log.Write(ERROR, format, a...)
 }
 
-func (logger *Logger) Fatal(format string, a ...interface{}) {
-	logger.Write(FATAL, format, a...)
+// Fatal 输出FATAL级别日志
+func (log *Logger) Fatal(format string, a ...interface{}) {
+	log.Write(FATAL, format, a...)
 	os.Exit(1)
 }

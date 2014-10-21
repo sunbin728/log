@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 )
 
+// NewDevice 创建一个新的日志输出设备
 func NewDevice(define string) Device {
 	var items = strings.SplitN(define, ":", 2)
 	var name = items[0]
@@ -20,8 +21,7 @@ func NewDevice(define string) Device {
 	return deviceMap[name](args)
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// FileDevice
+// FileDevice 文件输出设备
 type FileDevice struct {
 	file     *os.File
 	writer   *bufio.Writer
@@ -69,6 +69,7 @@ func (file *FileDevice) Write(p []byte) {
 	return
 }
 
+// Flush 刷新到设备
 func (file *FileDevice) Flush() {
 	file.lock.Lock()
 	if file.writer != nil {
@@ -77,8 +78,7 @@ func (file *FileDevice) Flush() {
 	file.lock.Unlock()
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// ConsoleDevice
+// ConsoleDevice 控制台设备
 type ConsoleDevice struct {
 }
 
@@ -90,11 +90,11 @@ func (console *ConsoleDevice) Write(p []byte) {
 	os.Stdout.Write(p)
 }
 
+// Flush 无行为
 func (console *ConsoleDevice) Flush() {
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// StdoutDevice
+// StdoutDevice 标准输出设备，定时刷新
 type StdoutDevice struct {
 	writer *bufio.Writer
 	lock   sync.Mutex
@@ -107,20 +107,21 @@ func createStdoutDevice(args string) Device {
 	return device
 }
 
+// Write 写入
 func (console *StdoutDevice) Write(p []byte) {
 	console.lock.Lock()
 	console.writer.Write(p)
 	console.lock.Unlock()
 }
 
+// Flush 刷新
 func (console *StdoutDevice) Flush() {
 	console.lock.Lock()
 	console.writer.Flush()
 	console.lock.Unlock()
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// NsqDevice
+// NsqDevice nsq设备
 type NsqDevice struct {
 	writer *nsq.Producer
 	name   string
@@ -163,5 +164,6 @@ func (nsqd *NsqDevice) Write(p []byte) {
 	}
 }
 
+// Flush 刷新
 func (nsqd *NsqDevice) Flush() {
 }
