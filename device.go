@@ -147,8 +147,8 @@ func createNsqDevice(args string) Device {
 	}
 	return &NsqDevice{
 		writer: w,
-		name:   strings.Trim(items[1], " "),
-		topic:  strings.Trim(items[2], " "),
+		name:   strings.Trim(items[2], " "),
+		topic:  strings.Trim(items[3], " "),
 	}
 }
 
