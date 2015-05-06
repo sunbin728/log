@@ -53,7 +53,7 @@ func getLevelStr(level int) byte {
 }
 
 // Format 格式化
-func (format *DefaultFormatter) Format(level int, msg string) []byte {
+func (format *DefaultFormatter) Format(level int, msg string) *bytes.Buffer {
 	buff := buffs.get()
 	buff.WriteByte(getLevelStr(level))
 	buff.WriteString(lastDateTimeStr)
@@ -74,7 +74,5 @@ func (format *DefaultFormatter) Format(level int, msg string) []byte {
 	buff.WriteString("] ")
 	buff.WriteString(msg)
 	buff.WriteByte('\n')
-	var r = buff.Bytes()
-	buffs.put(buff)
-	return r
+	return buff
 }

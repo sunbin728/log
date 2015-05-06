@@ -80,6 +80,7 @@ func (file *FileDevice) Flush() {
 
 // ConsoleDevice 控制台设备
 type ConsoleDevice struct {
+	lock sync.Mutex
 }
 
 func createConsoleDevice(args string) Device {
@@ -87,7 +88,9 @@ func createConsoleDevice(args string) Device {
 }
 
 func (console *ConsoleDevice) Write(p []byte) {
+	console.lock.Lock()
 	os.Stdout.Write(p)
+	console.lock.Unlock()
 }
 
 // Flush 无行为
@@ -147,8 +150,8 @@ func createNsqDevice(args string) Device {
 	}
 	return &NsqDevice{
 		writer: w,
-		name:   strings.Trim(items[2], " "),
-		topic:  strings.Trim(items[3], " "),
+		name:   strings.Trim(items[1], " "),
+		topic:  strings.Trim(items[2], " "),
 	}
 }
 

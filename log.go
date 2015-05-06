@@ -1,14 +1,16 @@
 package log
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 const (
@@ -47,7 +49,7 @@ type Device interface {
 
 // Formatter 日志格式化接口
 type Formatter interface {
-	Format(level int, msg string) []byte
+	Format(level int, msg string) *bytes.Buffer
 }
 
 // LoggerDefine 日志配置
@@ -292,12 +294,14 @@ func (log *Logger) Write(level int, format string, a ...interface{}) {
 	} else {
 		msg = fmt.Sprintf(format, a...)
 	}
-	var buff = log.format.Format(level, msg)
+	buff := log.format.Format(level, msg)
+	b := buff.Bytes()
 	for _, writer := range log.writers {
 		if level >= writer.level {
-			writer.device.Write(buff)
+			writer.device.Write(b)
 		}
 	}
+	buffs.put(buff)
 }
 
 // Debug 输出DEBUG级别日志
