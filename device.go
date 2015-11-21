@@ -3,7 +3,6 @@ package log
 import (
 	"bufio"
 	"fmt"
-	"github.com/bitly/go-nsq"
 	"os"
 	"strings"
 	"sync"
@@ -122,51 +121,4 @@ func (console *StdoutDevice) Flush() {
 	console.lock.Lock()
 	console.writer.Flush()
 	console.lock.Unlock()
-}
-
-// NsqDevice nsq设备
-type NsqDevice struct {
-	writer *nsq.Producer
-	name   string
-	topic  string
-}
-
-func createNsqDevice(args string) Device {
-	items := strings.SplitN(args, ":", 4)
-	if len(items) != 4 {
-		fmt.Printf("ERROR: logger init nsq, args invalid: %v\n", args)
-		os.Exit(1)
-	}
-	for _, item := range items {
-		if len(strings.Trim(item, " ")) == 0 {
-			fmt.Printf("ERROR: logger init nsq, args invalid: %v\n", args)
-			os.Exit(1)
-		}
-	}
-	w, err := nsq.NewProducer(items[0]+":"+items[1], nsq.NewConfig())
-	if err != nil {
-		fmt.Printf("ERROR: logger init nsq: %v\n", err.Error())
-		os.Exit(1)
-	}
-	return &NsqDevice{
-		writer: w,
-		name:   strings.Trim(items[1], " "),
-		topic:  strings.Trim(items[2], " "),
-	}
-}
-
-func (nsqd *NsqDevice) Write(p []byte) {
-	var buff = buffs.get()
-	buff.WriteString(nsqd.name)
-	buff.WriteByte('|')
-	buff.Write(p)
-	var err = nsqd.writer.Publish(nsqd.topic, buff.Bytes())
-	buffs.put(buff)
-	if err != nil {
-		fmt.Printf("ERROR: logger cannot write nsq: %v\n", err.Error())
-	}
-}
-
-// Flush 刷新
-func (nsqd *NsqDevice) Flush() {
 }
