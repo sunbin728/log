@@ -72,7 +72,6 @@ var (
 		"file":    createFileDevice,
 		"stdout":  createStdoutDevice,
 		"console": createConsoleDevice,
-		"nsq":     createNsqDevice,
 	}
 	defaultLogger = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
 	loggerMap     = map[string]*Logger{}
