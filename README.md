@@ -37,6 +37,11 @@ level = "debug"
 name = "default"
 writer = "file:mylog"
 level = "debug"
+
+[[logger]]
+name = "hour"
+writer = "file_hour:mylog"
+level = "debug"
 ```
 说明：
 此处定义了2个日志对象，名称都为```default```。```default```为默认日志对象。log包中的全局函数```Debug()```/```Info()```/```Error()```/...使用```default```日志对象。在这个配置中，定义了2个```default```日志对象，则表示对于输出到```default```日志的会同时输出到这2个日志对象上。第一个日志对象的输出设备为```console```表示为控制台。第二个日志对象的输出设备为```file```，表示输出到文件。```file```设备的格式为```file:<文件前缀>```。level代表的是该日志对象的输出最小级别。
