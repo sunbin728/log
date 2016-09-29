@@ -3,6 +3,7 @@ package log
 import (
 	"bufio"
 	"fmt"
+	"github.com/bitly/go-nsq"
 	"os"
 	"strings"
 	"sync"
@@ -27,6 +28,7 @@ type FileDevice struct {
 	prefix   string
 	lock     sync.Mutex
 	lastdate uint32
+	rorate   int
 }
 
 func createFileDevice(args string) Device {
@@ -35,9 +37,25 @@ func createFileDevice(args string) Device {
 	}
 }
 
+func createFileHourDevice(args string) Device {
+	return &FileDevice{
+		prefix: args,
+		rorate: HourRorate,
+	}
+}
+
 func (file *FileDevice) Write(p []byte) {
 	var err error
-	date := atomic.LoadUint32(&lastDate)
+	var date uint32
+	ldate := atomic.LoadUint32(&lastDate)
+	if file.rorate == DayRorate {
+		date = ldate
+	} else if file.rorate == HourRorate {
+		ltime := atomic.LoadUint32(&lastTime)
+		date = ldate*100 + ltime/10000
+	} else {
+		date = ldate
+	}
 	file.lock.Lock()
 	if file.lastdate != date {
 		if file.file != nil {
@@ -121,4 +139,51 @@ func (console *StdoutDevice) Flush() {
 	console.lock.Lock()
 	console.writer.Flush()
 	console.lock.Unlock()
+}
+
+// NsqDevice nsq设备
+type NsqDevice struct {
+	writer *nsq.Producer
+	name   string
+	topic  string
+}
+
+func createNsqDevice(args string) Device {
+	items := strings.SplitN(args, ":", 4)
+	if len(items) != 4 {
+		fmt.Printf("ERROR: logger init nsq, args invalid: %v\n", args)
+		os.Exit(1)
+	}
+	for _, item := range items {
+		if len(strings.Trim(item, " ")) == 0 {
+			fmt.Printf("ERROR: logger init nsq, args invalid: %v\n", args)
+			os.Exit(1)
+		}
+	}
+	w, err := nsq.NewProducer(items[0]+":"+items[1], nsq.NewConfig())
+	if err != nil {
+		fmt.Printf("ERROR: logger init nsq: %v\n", err.Error())
+		os.Exit(1)
+	}
+	return &NsqDevice{
+		writer: w,
+		name:   strings.Trim(items[1], " "),
+		topic:  strings.Trim(items[2], " "),
+	}
+}
+
+func (nsqd *NsqDevice) Write(p []byte) {
+	var buff = buffs.get()
+	buff.WriteString(nsqd.name)
+	buff.WriteByte('|')
+	buff.Write(p)
+	var err = nsqd.writer.Publish(nsqd.topic, buff.Bytes())
+	buffs.put(buff)
+	if err != nil {
+		fmt.Printf("ERROR: logger cannot write nsq: %v\n", err.Error())
+	}
+}
+
+// Flush 刷新
+func (nsqd *NsqDevice) Flush() {
 }

@@ -44,6 +44,8 @@ func getLevelStr(level int) byte {
 		return 'W'
 	case ERROR:
 		return 'E'
+	case CRITICAL:
+		return 'C'
 	case FATAL:
 		return 'F'
 	default:

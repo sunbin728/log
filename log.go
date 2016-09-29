@@ -22,10 +22,17 @@ const (
 	WARN = iota
 	// ERROR 日志级别
 	ERROR = iota
+	// CRITICAL 日志级别
+	CRITICAL = iota
 	// DISABLE 日志级别
 	DISABLE = iota
 	// FATAL 日志级别
 	FATAL = iota
+)
+
+const (
+	DayRorate  = iota
+	HourRorate = iota
 )
 
 // Logger 日志对象
@@ -39,6 +46,7 @@ type Logger struct {
 type Writer struct {
 	level  int
 	device Device
+	rotate string
 }
 
 // Device 日志输出设备
@@ -69,9 +77,12 @@ var (
 	lastTime        uint32
 	lastDate        uint32
 	deviceMap       = map[string]func(string) Device{
-		"file":    createFileDevice,
-		"stdout":  createStdoutDevice,
-		"console": createConsoleDevice,
+		"file":      createFileDevice,
+		"file_day":  createFileDevice,
+		"file_hour": createFileHourDevice,
+		"stdout":    createStdoutDevice,
+		"console":   createConsoleDevice,
+		"nsq":       createNsqDevice,
 	}
 	defaultLogger = NewLogger(&DefaultFormatter{}, NewWriter(DEBUG, "console"))
 	loggerMap     = map[string]*Logger{}
@@ -187,6 +198,8 @@ func getLevelFromStr(level string) int {
 		return WARN
 	case "e":
 		return ERROR
+	case "c":
+		return CRITICAL
 
 	case "debug":
 		return DEBUG
@@ -200,6 +213,8 @@ func getLevelFromStr(level string) int {
 		return ERROR
 	case "error":
 		return ERROR
+	case "critical":
+		return CRITICAL
 	case "disable":
 		return DISABLE
 	default:
@@ -323,6 +338,11 @@ func Error(format string, a ...interface{}) {
 	defaultLogger.Write(ERROR, format, a...)
 }
 
+// CRITICAL 输出CRITICAL级别日志
+func Critical(format string, a ...interface{}) {
+	defaultLogger.Write(CRITICAL, format, a...)
+}
+
 // Fatal 输出FATAL级别日志
 func Fatal(format string, a ...interface{}) {
 	defaultLogger.Write(FATAL, format, a...)
@@ -347,6 +367,11 @@ func (log *Logger) Warn(format string, a ...interface{}) {
 // Error 输出ERROR级别日志
 func (log *Logger) Error(format string, a ...interface{}) {
 	log.Write(ERROR, format, a...)
+}
+
+// CRITICAL 输出CRITICAL级别日志
+func (log *Logger) Critical(format string, a ...interface{}) {
+	log.Write(CRITICAL, format, a...)
 }
 
 // Fatal 输出FATAL级别日志
