@@ -225,6 +225,7 @@ func getLevelFromStr(level string) int {
 
 // SetLevel 设置日志级别
 func SetLevel(name string, index int, level string) error {
+	fmt.Printf("name=%v, index=%v, level=%v\n", name, index, level)
 	var log *Logger
 	if name == "default" {
 		log = defaultLogger
@@ -243,8 +244,8 @@ func SetLevel(name string, index int, level string) error {
 	}
 	var newlevel = getLevelFromStr(level)
 	if index == -1 {
-		for _, writer := range log.writers {
-			writer.level = newlevel
+		for i, _ := range log.writers {
+			log.writers[i].level = newlevel
 		}
 	} else {
 		log.writers[index].level = newlevel
