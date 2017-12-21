@@ -68,7 +68,7 @@ func (file *FileDevice) Write(p []byte) {
 		}
 	}
 	if file.file == nil {
-		filename := fmt.Sprintf("%s-%v.log", file.prefix, date)
+		filename := fmt.Sprintf("%s/logs/%s-%v.log", getCurrentParentDirectory(), file.prefix, date)
 		file.file, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			file.lock.Unlock()
@@ -186,4 +186,50 @@ func (nsqd *NsqDevice) Write(p []byte) {
 
 // Flush 刷新
 func (nsqd *NsqDevice) Flush() {
+}
+
+func substr(str string, start, length int) string {
+	rs := []rune(str)
+	rl := len(rs)
+	end := 0
+	if start < 0 {
+		start = rl - 1 + start
+	}
+	end = start + length
+	if start > end {
+		start, end = end, start
+	}
+	if start < 0 {
+		start = 0
+	}
+	if start > rl {
+		start = rl
+	}
+	if end < 0 {
+		end = 0
+	}
+	if end > rl {
+		end = rl
+	}
+	return string(rs[start:end])
+}
+
+//获取父路径
+func getParentDirectory(dirctory string) string {
+	return substr(dirctory, 0, strings.LastIndex(dirctory, "/"))
+}
+
+//获取当前父路径
+func getCurrentParentDirectory() string {
+	return getParentDirectory(getCurrentDirectory())
+}
+
+//获取当前路径
+func getCurrentDirectory() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		fmt.Printf("getCurrentDirectory fail: err=%v\n", err)
+		return ""
+	}
+	return strings.Replace(dir, "\\", "/", -1)
 }
