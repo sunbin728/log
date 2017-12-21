@@ -3,7 +3,7 @@ go语言的日志库
 
 #安装
 ```shell
-go get github.com/nybuxtsui/log
+go get github.com/sunbin728/log
 ```
 
 #快速使用
@@ -11,7 +11,7 @@ go get github.com/nybuxtsui/log
 package main
 
 import (
-	"github.com/nybuxtsui/log"
+	"github.com/sunbin728/log"
 )
 
 func main() {
@@ -23,6 +23,10 @@ func main() {
 ```
 D1001 200102 a.go:9] hello
 ```
+部署路径：
+bin/可执行程序
+config/配置文件
+logs/日志文件
 
 #配置
 配置文件使用toml格式
@@ -51,7 +55,7 @@ level = "debug"
 package main
 
 import (
-	"github.com/nybuxtsui/log"
+	"github.com/sunbin728/log"
 )
 
 func main() {
