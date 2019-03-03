@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bitly/go-nsq"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"

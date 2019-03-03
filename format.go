@@ -34,6 +34,10 @@ type DefaultFormatter struct {
 	format string
 }
 
+// 日志不添加任何附加信息
+type SimpleFormatter struct {
+}
+
 func getLevelStr(level int) byte {
 	switch level {
 	case DEBUG:
@@ -74,6 +78,14 @@ func (format *DefaultFormatter) Format(level int, msg string) *bytes.Buffer {
 		buff.WriteString(strconv.FormatInt(int64(line), 10))
 	}
 	buff.WriteString("] ")
+	buff.WriteString(msg)
+	buff.WriteByte('\n')
+	return buff
+}
+
+// Format 格式化
+func (format *SimpleFormatter) Format(level int, msg string) *bytes.Buffer {
+	buff := buffs.get()
 	buff.WriteString(msg)
 	buff.WriteByte('\n')
 	return buff

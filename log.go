@@ -46,7 +46,6 @@ type Logger struct {
 type Writer struct {
 	level  int
 	device Device
-	rotate string
 }
 
 // Device 日志输出设备
@@ -65,6 +64,7 @@ type LoggerDefine struct {
 	Name   string `toml:"name"`
 	Level  string `toml:"level"`
 	Writer string `toml:"writer"`
+	Format string `toml:"format"`
 }
 
 // LoggerConfig 日志配置
@@ -140,7 +140,14 @@ func Init(config []LoggerDefine) {
 				log, ok = loggerMap[logger.Name]
 			}
 			if !ok {
-				log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+				if logger.Format == "" {
+					log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+				} else if logger.Format == "simple" {
+					log = NewLogger(&SimpleFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+				} else {
+					log = NewLogger(&DefaultFormatter{}, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
+				}
+
 			} else {
 				log.writers = append(log.writers, NewWriter(getLevelFromStr(logger.Level), logger.Writer))
 				log.UpdateLevel()
@@ -288,7 +295,7 @@ func updateNow() {
 	tm := uint32(t.Hour()*10000 + t.Minute()*100 + t.Second())
 	atomic.StoreUint32(&lastDate, dt)
 	atomic.StoreUint32(&lastTime, tm)
-	lastDateTimeStr = fmt.Sprintf("%04d %06d", dt%10000, tm)
+	lastDateTimeStr = fmt.Sprintf("%04d %06d.%06d", dt%10000, tm, t.Nanosecond()/1000)
 }
 
 // Flush 刷新日志
