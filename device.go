@@ -3,7 +3,8 @@ package log
 import (
 	"bufio"
 	"fmt"
-	"github.com/bitly/go-nsq"
+	//"github.com/bitly/go-nsq"
+	"github.com/nsqio/go-nsq"
 	"os"
 	"path/filepath"
 	"strings"
